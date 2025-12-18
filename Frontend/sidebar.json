@@ -1,0 +1,47 @@
+{
+  "client": {
+    "/resources/store": {
+      "name": "Resource Store",
+      "icon": "🛒",
+      "showBadge": false,
+      "redirect": "/resources/store",
+      "component": "/billingresourcesstore/dist/client.html",
+      "description": "Purchase resources using credits",
+      "category": "client",
+      "group": "Billing"
+    }
+  },
+  "admin": {
+    "/billingresourcesstore": {
+      "name": "Package Store",
+      "icon": "🛒",
+      "showBadge": false,
+      "redirect": "/billingresourcesstore",
+      "component": "/billingresourcesstore/dist/admin.html",
+      "description": "Manage resource packages",
+      "category": "admin",
+      "group": "Fremium Resources"
+    },
+    "/billingresourcesstore/settings": {
+      "name": "Store Settings",
+      "icon": "⚙️",
+      "showBadge": false,
+      "redirect": "/billingresourcesstore/settings",
+      "component": "/billingresourcesstore/dist/admin-settings.html",
+      "description": "Configure store settings and discounts",
+      "category": "admin",
+      "group": "Fremium Resources"
+    },
+    "/billingresourcesstore/individual-resources": {
+      "name": "Individual Store",
+      "icon": "📦",
+      "showBadge": false,
+      "redirect": "/billingresourcesstore/individual-resources",
+      "component": "/billingresourcesstore/dist/admin-individual-resources.html",
+      "description": "Manage individual resource purchase options",
+      "category": "admin",
+      "group": "Fremium Resources"
+    }
+  },
+  "server": {}
+}

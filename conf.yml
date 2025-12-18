@@ -1,0 +1,19 @@
+plugin:
+  name: BillingResourcesStore
+  identifier: billingresourcesstore
+  description: 'Let users buy resources or packages containing resources using credits!'
+  flags:
+    - hasEvents
+  version: 1.0.0
+  target: v2
+  author:
+    - NaysKutzu
+    - MythicalSystems
+  icon: 'https://cdn.mythical.systems/featherpanel/paid.png'
+  requiredConfigs: {  }
+  dependencies:
+    - php=8.5
+    - php-ext=pdo
+    - plugin=billingcore
+    - plugin=billingresources
+config: {  }
