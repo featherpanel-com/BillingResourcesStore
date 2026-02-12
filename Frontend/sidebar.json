@@ -3,6 +3,7 @@
     "/resources/store": {
       "name": "Resource Store",
       "icon": "🛒",
+      "lucideIcon": "shopping-cart",
       "showBadge": false,
       "redirect": "/resources/store",
       "component": "/billingresourcesstore/dist/client.html",
@@ -15,6 +16,7 @@
     "/billingresourcesstore": {
       "name": "Package Store",
       "icon": "🛒",
+      "lucideIcon": "shopping-cart",
       "showBadge": false,
       "redirect": "/billingresourcesstore",
       "component": "/billingresourcesstore/dist/admin.html",
@@ -25,6 +27,7 @@
     "/billingresourcesstore/settings": {
       "name": "Store Settings",
       "icon": "⚙️",
+      "lucideIcon": "settings",
       "showBadge": false,
       "redirect": "/billingresourcesstore/settings",
       "component": "/billingresourcesstore/dist/admin-settings.html",
@@ -35,6 +38,7 @@
     "/billingresourcesstore/individual-resources": {
       "name": "Individual Store",
       "icon": "📦",
+      "lucideIcon": "package",
       "showBadge": false,
       "redirect": "/billingresourcesstore/individual-resources",
       "component": "/billingresourcesstore/dist/admin-individual-resources.html",

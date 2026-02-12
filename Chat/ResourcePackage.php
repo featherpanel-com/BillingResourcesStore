@@ -79,6 +79,13 @@ class ResourcePackage
         return $stmt->fetch(\PDO::FETCH_ASSOC) ?: null;
     }
 
+    private static array $allowedCreateFields = [
+        'name', 'description', 'memory_limit', 'cpu_limit', 'disk_limit',
+        'server_limit', 'database_limit', 'backup_limit', 'allocation_limit',
+        'price', 'enabled', 'sort_order',
+        'discount_percentage', 'discount_start_date', 'discount_end_date', 'discount_enabled',
+    ];
+
     /**
      * Create a new package.
      *
@@ -97,18 +104,36 @@ class ResourcePackage
             }
         }
 
+        $filtered = [];
+        foreach (self::$allowedCreateFields as $field) {
+            if (array_key_exists($field, $data)) {
+                $filtered[$field] = $data[$field];
+            }
+        }
+
+        if (empty($filtered)) {
+            return false;
+        }
+
         $pdo = Database::getPdoConnection();
-        $fields = array_keys($data);
+        $fields = array_keys($filtered);
         $placeholders = array_map(fn ($f) => ':' . $f, $fields);
         $sql = 'INSERT INTO ' . self::$table . ' (' . implode(',', $fields) . ') VALUES (' . implode(',', $placeholders) . ')';
         $stmt = $pdo->prepare($sql);
 
-        if ($stmt->execute($data)) {
+        if ($stmt->execute($filtered)) {
             return (int) $pdo->lastInsertId();
         }
 
         return false;
     }
+
+    private static array $allowedUpdateFields = [
+        'name', 'description', 'memory_limit', 'cpu_limit', 'disk_limit',
+        'server_limit', 'database_limit', 'backup_limit', 'allocation_limit',
+        'price', 'enabled', 'sort_order',
+        'discount_percentage', 'discount_start_date', 'discount_end_date', 'discount_enabled',
+    ];
 
     /**
      * Update package by ID.
@@ -124,21 +149,25 @@ class ResourcePackage
             return false;
         }
 
-        if (empty($data)) {
+        $filtered = [];
+        foreach (self::$allowedUpdateFields as $field) {
+            if (array_key_exists($field, $data)) {
+                $filtered[$field] = $data[$field];
+            }
+        }
+
+        if (empty($filtered)) {
             return false;
         }
 
-        // Prevent updating primary key
-        unset($data['id']);
-
         $pdo = Database::getPdoConnection();
-        $fields = array_keys($data);
+        $fields = array_keys($filtered);
         $setClause = implode(', ', array_map(fn ($f) => $f . ' = :' . $f, $fields));
         $sql = 'UPDATE ' . self::$table . ' SET ' . $setClause . ' WHERE id = :id';
-        $data['id'] = $id;
+        $filtered['id'] = $id;
         $stmt = $pdo->prepare($sql);
 
-        return $stmt->execute($data);
+        return $stmt->execute($filtered);
     }
 
     /**

@@ -85,7 +85,7 @@ class StoreController
     )]
     public function createPackage(Request $request): Response
     {
-        $payload = json_decode($request->getContent() ?: '[]', true);
+        $payload = json_decode($request->getContent() ?: '[]', true, 32);
         if (!is_array($payload)) {
             return ApiResponse::error('Invalid JSON payload provided.', 'INVALID_JSON_PAYLOAD', 400);
         }
@@ -176,7 +176,7 @@ class StoreController
             return ApiResponse::error('Package not found', 'PACKAGE_NOT_FOUND', 404);
         }
 
-        $payload = json_decode($request->getContent() ?: '[]', true);
+        $payload = json_decode($request->getContent() ?: '[]', true, 32);
         if (!is_array($payload)) {
             return ApiResponse::error('Invalid JSON payload provided.', 'INVALID_JSON_PAYLOAD', 400);
         }

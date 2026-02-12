@@ -305,7 +305,7 @@ onMounted(() => {
         </TabsList>
 
         <TabsContent value="packages" class="mt-4">
-          <Card>
+          <Card class="bg-card/50 backdrop-blur-sm">
             <div class="p-6">
               <div
                 v-if="loading && packages.length === 0"
@@ -340,7 +340,7 @@ onMounted(() => {
                 <Card
                   v-for="pkg in packages"
                   :key="pkg.id"
-                  class="p-6 flex flex-col border-2"
+                  class="p-6 flex flex-col border-2 bg-card/50 backdrop-blur-sm"
                   :class="{
                     'opacity-60': !canAffordPackage(pkg),
                   }"
@@ -503,7 +503,7 @@ onMounted(() => {
         </TabsContent>
 
         <TabsContent value="individual" class="mt-4">
-          <Card>
+          <Card class="bg-card/50 backdrop-blur-sm">
             <div class="p-6">
               <div
                 v-if="!individualResources || !individualResources.enabled"
@@ -523,7 +523,7 @@ onMounted(() => {
                 <Card
                   v-for="resource in individualResources.resources"
                   :key="resource.id"
-                  class="p-6 border-2"
+                  class="p-6 border-2 bg-card/50 backdrop-blur-sm"
                   :class="{
                     'opacity-60': !canAffordResource(resource),
                   }"

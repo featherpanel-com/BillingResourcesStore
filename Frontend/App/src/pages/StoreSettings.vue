@@ -7,14 +7,22 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Save, Settings, Coins } from "lucide-vue-next";
 import { useToast } from "vue-toastification";
 import axios from "axios";
-import type { AxiosError } from "axios";
 
 const toast = useToast();
+
+function getApiErrorMessage(err: unknown): string {
+  if (axios.isAxiosError(err) && err.response?.data) {
+    const d = err.response.data as { error_message?: string; message?: string };
+    return d.error_message ?? d.message ?? "An error occurred";
+  }
+  return err instanceof Error ? err.message : "An error occurred";
+}
 
 const loading = ref(false);
 const saving = ref(false);
 const settings = ref<{
   store_enabled?: boolean;
+  individual_purchases_enabled?: boolean;
   maintenance_message?: string;
   global_discount?: number;
   minimum_purchase_for_discount?: number;
@@ -36,10 +44,7 @@ const loadSettings = async () => {
       settings.value = response.data.data.settings;
     }
   } catch (err) {
-    const axiosError = err as AxiosError<{ error_message?: string }>;
-    toast.error(
-      axiosError.response?.data?.error_message || "Failed to load settings"
-    );
+    toast.error(getApiErrorMessage(err) || "Failed to load settings");
   } finally {
     loading.value = false;
   }
@@ -57,10 +62,7 @@ const saveSettings = async () => {
       await loadSettings();
     }
   } catch (err) {
-    const axiosError = err as AxiosError<{ error_message?: string }>;
-    toast.error(
-      axiosError.response?.data?.error_message || "Failed to save settings"
-    );
+    toast.error(getApiErrorMessage(err) || "Failed to save settings");
   } finally {
     saving.value = false;
   }
@@ -94,22 +96,33 @@ onMounted(() => {
 
       <div v-else class="space-y-6">
         <!-- Store Status -->
-        <Card class="p-6">
+        <Card class="p-6 bg-card/50 backdrop-blur-sm">
           <div class="flex items-center gap-2 mb-4">
             <Settings class="h-5 w-5 text-primary" />
             <h2 class="text-lg font-semibold">Store Status</h2>
           </div>
           <div class="space-y-4">
-            <div class="flex items-center gap-2">
-              <input
-                id="store_enabled"
-                v-model="settings.store_enabled"
-                type="checkbox"
-                class="h-4 w-4 rounded border-gray-300"
-              />
+            <div class="flex items-center justify-between gap-4">
               <Label for="store_enabled" class="cursor-pointer"
                 >Store Enabled</Label
               >
+              <button
+                type="button"
+                role="switch"
+                :aria-checked="settings.store_enabled"
+                @click="settings.store_enabled = !settings.store_enabled"
+                :class="[
+                  'relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50',
+                  settings.store_enabled ? 'bg-primary' : 'bg-muted',
+                ]"
+              >
+                <span
+                  class="pointer-events-none block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform"
+                  :class="
+                    settings.store_enabled ? 'translate-x-5' : 'translate-x-0.5'
+                  "
+                />
+              </button>
             </div>
             <div>
               <Label for="maintenance_message">Maintenance Message</Label>
@@ -124,28 +137,77 @@ onMounted(() => {
         </Card>
 
         <!-- Individual Resource Purchases -->
-        <Card class="p-6">
+        <Card class="p-6 bg-card/50 backdrop-blur-sm">
           <div class="flex items-center gap-2 mb-4">
             <Coins class="h-5 w-5 text-primary" />
             <h2 class="text-lg font-semibold">Individual Resource Purchases</h2>
           </div>
           <div class="space-y-4">
-            <div
+            <div class="flex items-center justify-between gap-4">
+              <Label for="individual_purchases_enabled" class="cursor-pointer"
+                >Enable Individual Resource Purchases</Label
+              >
+              <button
+                type="button"
+                role="switch"
+                :aria-checked="settings.individual_purchases_enabled"
+                @click="
+                  settings.individual_purchases_enabled =
+                    !settings.individual_purchases_enabled
+                "
+                :class="[
+                  'relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50',
+                  settings.individual_purchases_enabled ? 'bg-primary' : 'bg-muted',
+                ]"
+              >
+                <span
+                  class="pointer-events-none block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform"
+                  :class="
+                    settings.individual_purchases_enabled
+                      ? 'translate-x-5'
+                      : 'translate-x-0.5'
+                  "
+                />
+              </button>
+            </div>
+            <div v-if="settings.individual_purchases_enabled"
               class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800"
             >
               <p class="text-sm text-blue-900 dark:text-blue-200">
-                <strong>Note:</strong> Individual resources are now managed
-                through the
-                <a class="underline font-semibold"> Individual Resources </a>
-                page. You can create, edit, and delete individual resource
-                purchase options there.
+                <strong>Note:</strong> Individual resources are managed through
+                the Individual Resources page. Create, edit, and delete individual
+                resource purchase options there.
+              </p>
+            </div>
+          </div>
+        </Card>
+
+        <!-- Front Page Display -->
+        <Card class="p-6 bg-card/50 backdrop-blur-sm">
+          <div class="flex items-center gap-2 mb-4">
+            <Coins class="h-5 w-5 text-primary" />
+            <h2 class="text-lg font-semibold">Front Page Display</h2>
+          </div>
+          <div class="space-y-4">
+            <div>
+              <Label for="front_page_display">Default Tab</Label>
+              <select
+                id="front_page_display"
+                v-model="settings.front_page_display"
+                class="mt-2 flex h-8 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="packages">Resource Packages</option>
+                <option value="individual">Individual Resources</option>
+              </select>
+              <p class="text-xs text-muted-foreground mt-1">
+                Which tab users see first when visiting the store
               </p>
             </div>
           </div>
         </Card>
 
         <!-- Discount Settings -->
-        <Card class="p-6">
+        <Card class="p-6 bg-card/50 backdrop-blur-sm">
           <div class="flex items-center gap-2 mb-4">
             <Coins class="h-5 w-5 text-primary" />
             <h2 class="text-lg font-semibold">Discount Settings</h2>
@@ -205,26 +267,42 @@ onMounted(() => {
         </Card>
 
         <!-- Invoice Generation Settings -->
-        <Card class="p-6">
+        <Card class="p-6 bg-card/50 backdrop-blur-sm">
           <div class="flex items-center gap-2 mb-4">
             <Coins class="h-5 w-5 text-primary" />
             <h2 class="text-lg font-semibold">Invoice Generation</h2>
           </div>
           <div class="space-y-6">
             <div>
-              <div class="flex items-center gap-2 mb-2">
-                <input
-                  id="invoice_generation_enabled"
-                  v-model="settings.invoice_generation_enabled"
-                  type="checkbox"
-                  class="h-4 w-4 rounded border-gray-300"
-                />
+              <div class="flex items-center justify-between gap-4 mb-2">
                 <Label
                   for="invoice_generation_enabled"
-                  class="text-sm font-medium"
+                  class="text-sm font-medium cursor-pointer"
                 >
                   Enable Invoice Generation
                 </Label>
+                <button
+                  type="button"
+                  role="switch"
+                  :aria-checked="settings.invoice_generation_enabled"
+                  @click="
+                    settings.invoice_generation_enabled =
+                      !settings.invoice_generation_enabled
+                  "
+                  :class="[
+                    'relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50',
+                    settings.invoice_generation_enabled ? 'bg-primary' : 'bg-muted',
+                  ]"
+                >
+                  <span
+                    class="pointer-events-none block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform"
+                    :class="
+                      settings.invoice_generation_enabled
+                        ? 'translate-x-5'
+                        : 'translate-x-0.5'
+                    "
+                  />
+                </button>
               </div>
               <p class="text-xs text-muted-foreground ml-6">
                 When enabled, invoices will be automatically generated for
@@ -238,19 +316,35 @@ onMounted(() => {
               class="space-y-4 pl-6 border-l-2 border-border"
             >
               <div>
-                <div class="flex items-center gap-2 mb-2">
-                  <input
-                    id="invoice_generation_packages"
-                    v-model="settings.invoice_generation_packages"
-                    type="checkbox"
-                    class="h-4 w-4 rounded border-gray-300"
-                  />
+                <div class="flex items-center justify-between gap-4 mb-2">
                   <Label
                     for="invoice_generation_packages"
-                    class="text-sm font-medium"
+                    class="text-sm font-medium cursor-pointer"
                   >
                     Generate Invoices for Resource Packages
                   </Label>
+                  <button
+                    type="button"
+                    role="switch"
+                    :aria-checked="settings.invoice_generation_packages"
+                    @click="
+                      settings.invoice_generation_packages =
+                        !settings.invoice_generation_packages
+                    "
+                    :class="[
+                      'relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50',
+                      settings.invoice_generation_packages ? 'bg-primary' : 'bg-muted',
+                    ]"
+                  >
+                    <span
+                      class="pointer-events-none block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform"
+                      :class="
+                        settings.invoice_generation_packages
+                          ? 'translate-x-5'
+                          : 'translate-x-0.5'
+                      "
+                    />
+                  </button>
                 </div>
                 <p class="text-xs text-muted-foreground ml-6">
                   Create invoices when users purchase resource packages
@@ -258,19 +352,35 @@ onMounted(() => {
               </div>
 
               <div>
-                <div class="flex items-center gap-2 mb-2">
-                  <input
-                    id="invoice_generation_individual"
-                    v-model="settings.invoice_generation_individual"
-                    type="checkbox"
-                    class="h-4 w-4 rounded border-gray-300"
-                  />
+                <div class="flex items-center justify-between gap-4 mb-2">
                   <Label
                     for="invoice_generation_individual"
-                    class="text-sm font-medium"
+                    class="text-sm font-medium cursor-pointer"
                   >
                     Generate Invoices for Individual Resources
                   </Label>
+                  <button
+                    type="button"
+                    role="switch"
+                    :aria-checked="settings.invoice_generation_individual"
+                    @click="
+                      settings.invoice_generation_individual =
+                        !settings.invoice_generation_individual
+                    "
+                    :class="[
+                      'relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50',
+                      settings.invoice_generation_individual ? 'bg-primary' : 'bg-muted',
+                    ]"
+                  >
+                    <span
+                      class="pointer-events-none block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform"
+                      :class="
+                        settings.invoice_generation_individual
+                          ? 'translate-x-5'
+                          : 'translate-x-0.5'
+                      "
+                    />
+                  </button>
                 </div>
                 <p class="text-xs text-muted-foreground ml-6">
                   Create invoices when users purchase any individual resources

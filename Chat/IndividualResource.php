@@ -202,8 +202,10 @@ class IndividualResource
             $discountEndDate = $resource['discount_end_date'] ?? null;
 
             $now = time();
-            $startValid = $discountStartDate === null || strtotime($discountStartDate) <= $now;
-            $endValid = $discountEndDate === null || strtotime($discountEndDate) >= $now;
+            $startTs = $discountStartDate === null || $discountStartDate === '' ? null : @strtotime($discountStartDate);
+            $endTs = $discountEndDate === null || $discountEndDate === '' ? null : @strtotime($discountEndDate);
+            $startValid = $startTs === null || ($startTs !== false && $startTs <= $now);
+            $endValid = $endTs === null || ($endTs !== false && $endTs >= $now);
 
             if ($startValid && $endValid && $discountPercentage > 0) {
                 $discountApplied = $discountPercentage;

@@ -45,6 +45,14 @@ class IndividualResourcesController
     public function getResourcePrices(Request $request): Response
     {
         try {
+            $enabled = SettingsHelper::isIndividualPurchasesEnabled();
+            if (!$enabled) {
+                return ApiResponse::success([
+                    'resources' => [],
+                    'enabled' => false,
+                ], 'Resource prices retrieved successfully', 200);
+            }
+
             $resources = IndividualResource::getAll(true);
 
             // Calculate prices with discounts
@@ -108,7 +116,7 @@ class IndividualResourcesController
             return ApiResponse::error('Individual resource purchases are disabled', 'INDIVIDUAL_PURCHASES_DISABLED', 503);
         }
 
-        $payload = json_decode($request->getContent() ?: '[]', true);
+        $payload = json_decode($request->getContent() ?: '[]', true, 32);
         if (!is_array($payload)) {
             return ApiResponse::error('Invalid JSON payload provided.', 'INVALID_JSON_PAYLOAD', 400);
         }

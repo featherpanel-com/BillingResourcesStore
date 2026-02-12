@@ -1,6 +1,5 @@
 import { ref } from "vue";
 import axios from "axios";
-import type { AxiosError } from "axios";
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -9,6 +8,14 @@ export interface ApiResponse<T> {
   error?: boolean;
   error_message?: string;
   error_code?: string;
+}
+
+function extractApiError(err: unknown): string {
+  if (axios.isAxiosError(err) && err.response?.data) {
+    const d = err.response.data as { error_message?: string; message?: string };
+    return d.error_message ?? d.message ?? err.message ?? "An error occurred";
+  }
+  return err instanceof Error ? err.message : "An error occurred";
 }
 
 export interface ResourcePackage {
@@ -84,9 +91,9 @@ export function useStoreAPI() {
       }
       throw new Error(response.data.error_message || "Failed to fetch packages");
     } catch (err) {
-      const axiosError = err as AxiosError<ApiResponse<unknown>>;
-      error.value = axiosError.response?.data?.error_message || axiosError.message || "Failed to fetch packages";
-      throw err;
+      const msg = extractApiError(err);
+      error.value = msg;
+      throw new Error(msg);
     } finally {
       loading.value = false;
     }
@@ -105,9 +112,9 @@ export function useStoreAPI() {
       }
       throw new Error(response.data.error_message || "Failed to purchase package");
     } catch (err) {
-      const axiosError = err as AxiosError<ApiResponse<unknown>>;
-      error.value = axiosError.response?.data?.error_message || axiosError.message || "Failed to purchase package";
-      throw err;
+      const msg = extractApiError(err);
+      error.value = msg;
+      throw new Error(msg);
     } finally {
       loading.value = false;
     }
@@ -125,9 +132,9 @@ export function useStoreAPI() {
       }
       throw new Error(response.data.error_message || "Failed to fetch purchases");
     } catch (err) {
-      const axiosError = err as AxiosError<ApiResponse<unknown>>;
-      error.value = axiosError.response?.data?.error_message || axiosError.message || "Failed to fetch purchases";
-      throw err;
+      const msg = extractApiError(err);
+      error.value = msg;
+      throw new Error(msg);
     } finally {
       loading.value = false;
     }

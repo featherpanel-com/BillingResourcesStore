@@ -26,10 +26,17 @@ import {
 } from "lucide-vue-next";
 import { useToast } from "vue-toastification";
 import axios from "axios";
-import type { AxiosError } from "axios";
 import type { ResourcePackage } from "@/composables/useStoreAPI";
 
 const toast = useToast();
+
+function getApiErrorMessage(err: unknown): string {
+  if (axios.isAxiosError(err) && err.response?.data) {
+    const d = err.response.data as { error_message?: string; message?: string };
+    return d.error_message ?? d.message ?? "An error occurred";
+  }
+  return err instanceof Error ? err.message : "An error occurred";
+}
 
 const loading = ref(false);
 const packages = ref<ResourcePackage[]>([]);
@@ -82,10 +89,7 @@ const loadPackages = async () => {
       packages.value = response.data.data.packages;
     }
   } catch (err) {
-    const axiosError = err as AxiosError<{ error_message?: string }>;
-    toast.error(
-      axiosError.response?.data?.error_message || "Failed to load packages"
-    );
+    toast.error(getApiErrorMessage(err) || "Failed to load packages");
   } finally {
     loading.value = false;
   }
@@ -106,6 +110,10 @@ const openCreateDialog = () => {
     price: 0,
     enabled: true,
     sort_order: 0,
+    discount_percentage: 0,
+    discount_start_date: undefined,
+    discount_end_date: undefined,
+    discount_enabled: false,
   };
   showDialog.value = true;
 };
@@ -151,6 +159,10 @@ const savePackage = async () => {
       price: Math.max(0, formData.value.price || 0),
       enabled: formData.value.enabled ?? true,
       sort_order: formData.value.sort_order || 0,
+      discount_percentage: Math.max(0, Math.min(100, formData.value.discount_percentage ?? 0)),
+      discount_start_date: formData.value.discount_start_date || null,
+      discount_end_date: formData.value.discount_end_date || null,
+      discount_enabled: formData.value.discount_enabled ?? false,
     };
 
     if (editingPackage.value) {
@@ -174,10 +186,7 @@ const savePackage = async () => {
     closeDialog();
     await loadPackages();
   } catch (err) {
-    const axiosError = err as AxiosError<{ error_message?: string }>;
-    toast.error(
-      axiosError.response?.data?.error_message || "Failed to save package"
-    );
+    toast.error(getApiErrorMessage(err) || "Failed to save package");
   } finally {
     saving.value = false;
   }
@@ -197,10 +206,7 @@ const deletePackage = async (pkg: ResourcePackage) => {
       await loadPackages();
     }
   } catch (err) {
-    const axiosError = err as AxiosError<{ error_message?: string }>;
-    toast.error(
-      axiosError.response?.data?.error_message || "Failed to delete package"
-    );
+    toast.error(getApiErrorMessage(err) || "Failed to delete package");
   }
 };
 
@@ -230,7 +236,7 @@ onMounted(() => {
       </div>
 
       <div v-else-if="packages.length === 0" class="mb-6">
-        <Card class="p-6">
+        <Card class="p-6 bg-card/50 backdrop-blur-sm">
           <div class="text-center py-8">
             <h3 class="text-lg font-semibold mb-2">No Packages</h3>
             <p class="text-sm text-muted-foreground mb-4">
@@ -245,7 +251,7 @@ onMounted(() => {
       </div>
 
       <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Card v-for="pkg in packages" :key="pkg.id" class="p-6">
+        <Card v-for="pkg in packages" :key="pkg.id" class="p-6 bg-card/50 backdrop-blur-sm">
           <div class="flex items-start justify-between mb-4">
             <div class="flex-1">
               <div class="flex items-center gap-2 mb-1">
@@ -484,29 +490,49 @@ onMounted(() => {
               </div>
             </div>
 
-            <div class="flex items-center gap-2">
-              <input
-                id="enabled"
-                v-model="formData.enabled"
-                type="checkbox"
-                class="h-4 w-4 rounded border-gray-300"
-              />
+            <div class="flex items-center justify-between gap-4">
               <Label for="enabled" class="cursor-pointer">Enabled</Label>
+              <button
+                type="button"
+                role="switch"
+                :aria-checked="formData.enabled"
+                @click="formData.enabled = !formData.enabled"
+                :class="[
+                  'relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50',
+                  formData.enabled ? 'bg-primary' : 'bg-muted',
+                ]"
+              >
+                <span
+                  class="pointer-events-none block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform"
+                  :class="formData.enabled ? 'translate-x-5' : 'translate-x-0.5'"
+                />
+              </button>
             </div>
 
             <div class="border-t pt-4 mt-4">
               <h4 class="font-semibold mb-3">Discount Settings</h4>
 
-              <div class="flex items-center gap-2 mb-4">
-                <input
-                  id="discount_enabled"
-                  v-model="formData.discount_enabled"
-                  type="checkbox"
-                  class="h-4 w-4 rounded border-gray-300"
-                />
+              <div class="flex items-center justify-between gap-4 mb-4">
                 <Label for="discount_enabled" class="cursor-pointer"
                   >Enable Discount</Label
                 >
+                <button
+                  type="button"
+                  role="switch"
+                  :aria-checked="formData.discount_enabled"
+                  @click="formData.discount_enabled = !formData.discount_enabled"
+                  :class="[
+                    'relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50',
+                    formData.discount_enabled ? 'bg-primary' : 'bg-muted',
+                  ]"
+                >
+                  <span
+                    class="pointer-events-none block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform"
+                    :class="
+                      formData.discount_enabled ? 'translate-x-5' : 'translate-x-0.5'
+                    "
+                  />
+                </button>
               </div>
 
               <div v-if="formData.discount_enabled" class="space-y-4">

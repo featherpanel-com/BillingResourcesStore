@@ -86,7 +86,7 @@ class IndividualResourcesController
     )]
     public function createResource(Request $request): Response
     {
-        $payload = json_decode($request->getContent() ?: '[]', true);
+        $payload = json_decode($request->getContent() ?: '[]', true, 32);
         if (!is_array($payload)) {
             return ApiResponse::error('Invalid JSON payload provided.', 'INVALID_JSON_PAYLOAD', 400);
         }
@@ -178,7 +178,7 @@ class IndividualResourcesController
             return ApiResponse::error('Resource not found', 'RESOURCE_NOT_FOUND', 404);
         }
 
-        $payload = json_decode($request->getContent() ?: '[]', true);
+        $payload = json_decode($request->getContent() ?: '[]', true, 32);
         if (!is_array($payload)) {
             return ApiResponse::error('Invalid JSON payload provided.', 'INVALID_JSON_PAYLOAD', 400);
         }

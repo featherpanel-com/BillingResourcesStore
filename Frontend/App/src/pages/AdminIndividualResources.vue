@@ -26,9 +26,16 @@ import {
 } from "lucide-vue-next";
 import { useToast } from "vue-toastification";
 import axios from "axios";
-import type { AxiosError } from "axios";
 
 const toast = useToast();
+
+function getApiErrorMessage(err: unknown): string {
+  if (axios.isAxiosError(err) && err.response?.data) {
+    const d = err.response.data as { error_message?: string; message?: string };
+    return d.error_message ?? d.message ?? "An error occurred";
+  }
+  return err instanceof Error ? err.message : "An error occurred";
+}
 
 interface IndividualResource {
   id?: number;
@@ -122,10 +129,7 @@ const loadResources = async () => {
       );
     }
   } catch (err) {
-    const axiosError = err as AxiosError<{ error_message?: string }>;
-    toast.error(
-      axiosError.response?.data?.error_message || "Failed to load resources"
-    );
+    toast.error(getApiErrorMessage(err) || "Failed to load resources");
   } finally {
     loading.value = false;
   }
@@ -217,10 +221,7 @@ const saveResource = async () => {
       }
     }
   } catch (err) {
-    const axiosError = err as AxiosError<{ error_message?: string }>;
-    toast.error(
-      axiosError.response?.data?.error_message || "Failed to save resource"
-    );
+    toast.error(getApiErrorMessage(err) || "Failed to save resource");
   } finally {
     saving.value = false;
   }
@@ -240,10 +241,7 @@ const deleteResource = async (id: number) => {
       await loadResources();
     }
   } catch (err) {
-    const axiosError = err as AxiosError<{ error_message?: string }>;
-    toast.error(
-      axiosError.response?.data?.error_message || "Failed to delete resource"
-    );
+    toast.error(getApiErrorMessage(err) || "Failed to delete resource");
   }
 };
 
@@ -287,7 +285,7 @@ onMounted(() => {
       </div>
 
       <div v-else-if="resources.length === 0" class="mb-6">
-        <Card class="p-6">
+        <Card class="p-6 bg-card/50 backdrop-blur-sm">
           <div class="text-center py-8">
             <HardDrive class="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
             <h3 class="text-lg font-semibold mb-2">No Resources</h3>
@@ -306,7 +304,7 @@ onMounted(() => {
         <Card
           v-for="resource in resources"
           :key="resource.id"
-          class="p-6 flex flex-col"
+          class="p-6 flex flex-col bg-card/50 backdrop-blur-sm"
         >
           <div class="flex-1">
             <div class="flex items-start justify-between mb-4">
@@ -558,29 +556,49 @@ onMounted(() => {
               </div>
             </div>
 
-            <div class="flex items-center gap-2">
-              <input
-                id="enabled"
-                v-model="formData.enabled"
-                type="checkbox"
-                class="h-4 w-4 rounded border-gray-300"
-              />
+            <div class="flex items-center justify-between gap-4">
               <Label for="enabled" class="cursor-pointer">Enabled</Label>
+              <button
+                type="button"
+                role="switch"
+                :aria-checked="formData.enabled"
+                @click="formData.enabled = !formData.enabled"
+                :class="[
+                  'relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50',
+                  formData.enabled ? 'bg-primary' : 'bg-muted',
+                ]"
+              >
+                <span
+                  class="pointer-events-none block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform"
+                  :class="formData.enabled ? 'translate-x-5' : 'translate-x-0.5'"
+                />
+              </button>
             </div>
 
             <div class="border-t pt-4 mt-4">
               <h4 class="font-semibold mb-3">Discount Settings</h4>
 
-              <div class="flex items-center gap-2 mb-4">
-                <input
-                  id="discount_enabled"
-                  v-model="formData.discount_enabled"
-                  type="checkbox"
-                  class="h-4 w-4 rounded border-gray-300"
-                />
+              <div class="flex items-center justify-between gap-4 mb-4">
                 <Label for="discount_enabled" class="cursor-pointer">
                   Enable Discount
                 </Label>
+                <button
+                  type="button"
+                  role="switch"
+                  :aria-checked="formData.discount_enabled"
+                  @click="formData.discount_enabled = !formData.discount_enabled"
+                  :class="[
+                    'relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50',
+                    formData.discount_enabled ? 'bg-primary' : 'bg-muted',
+                  ]"
+                >
+                  <span
+                    class="pointer-events-none block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform"
+                    :class="
+                      formData.discount_enabled ? 'translate-x-5' : 'translate-x-0.5'
+                    "
+                  />
+                </button>
               </div>
 
               <div v-if="formData.discount_enabled" class="space-y-4">

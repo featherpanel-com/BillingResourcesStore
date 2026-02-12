@@ -567,6 +567,7 @@ class SettingsHelper
         return [
             'store_enabled' => self::isStoreEnabled(),
             'maintenance_message' => self::getMaintenanceMessage(),
+            'individual_purchases_enabled' => self::isIndividualPurchasesEnabled(),
             'global_discount' => self::getGlobalDiscount(),
             'minimum_purchase_for_discount' => self::getMinimumPurchaseForDiscount(),
             'bulk_discounts' => self::getBulkDiscounts(),

@@ -31,6 +31,12 @@ class Purchase
      */
     private static string $table = 'featherpanel_billingresourcesstore_purchases';
 
+    private static array $allowedCreateFields = [
+        'user_id', 'package_id', 'price',
+        'memory_limit', 'cpu_limit', 'disk_limit', 'server_limit',
+        'database_limit', 'backup_limit', 'allocation_limit',
+    ];
+
     /**
      * Create a new purchase record.
      *
@@ -49,13 +55,24 @@ class Purchase
             }
         }
 
+        $filtered = [];
+        foreach (self::$allowedCreateFields as $field) {
+            if (array_key_exists($field, $data)) {
+                $filtered[$field] = $data[$field];
+            }
+        }
+
+        if (empty($filtered)) {
+            return false;
+        }
+
         $pdo = Database::getPdoConnection();
-        $fields = array_keys($data);
+        $fields = array_keys($filtered);
         $placeholders = array_map(fn ($f) => ':' . $f, $fields);
         $sql = 'INSERT INTO ' . self::$table . ' (' . implode(',', $fields) . ') VALUES (' . implode(',', $placeholders) . ')';
         $stmt = $pdo->prepare($sql);
 
-        if ($stmt->execute($data)) {
+        if ($stmt->execute($filtered)) {
             return (int) $pdo->lastInsertId();
         }
 

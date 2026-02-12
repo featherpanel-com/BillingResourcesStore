@@ -70,17 +70,21 @@ class StoreController
                     $now = new \DateTime();
 
                     $isActive = true;
-                    if ($startDate) {
-                        $start = new \DateTime($startDate);
-                        if ($now < $start) {
-                            $isActive = false;
+                    try {
+                        if ($startDate) {
+                            $start = new \DateTime($startDate);
+                            if ($now < $start) {
+                                $isActive = false;
+                            }
                         }
-                    }
-                    if ($endDate) {
-                        $end = new \DateTime($endDate);
-                        if ($now > $end) {
-                            $isActive = false;
+                        if ($endDate && $isActive) {
+                            $end = new \DateTime($endDate);
+                            if ($now > $end) {
+                                $isActive = false;
+                            }
                         }
+                    } catch (\Exception $e) {
+                        $isActive = false;
                     }
 
                     if ($isActive && $discountPercentage > 0) {
@@ -133,7 +137,7 @@ class StoreController
         $user = $request->get('user');
         $userId = (int) $user['id'];
 
-        $payload = json_decode($request->getContent() ?: '[]', true);
+        $payload = json_decode($request->getContent() ?: '[]', true, 32);
         if (!is_array($payload)) {
             return ApiResponse::error('Invalid JSON payload provided.', 'INVALID_JSON_PAYLOAD', 400);
         }
@@ -178,17 +182,21 @@ class StoreController
                 $now = new \DateTime();
 
                 $isActive = true;
-                if ($startDate) {
-                    $start = new \DateTime($startDate);
-                    if ($now < $start) {
-                        $isActive = false;
+                try {
+                    if ($startDate) {
+                        $start = new \DateTime($startDate);
+                        if ($now < $start) {
+                            $isActive = false;
+                        }
                     }
-                }
-                if ($endDate) {
-                    $end = new \DateTime($endDate);
-                    if ($now > $end) {
-                        $isActive = false;
+                    if ($endDate && $isActive) {
+                        $end = new \DateTime($endDate);
+                        if ($now > $end) {
+                            $isActive = false;
+                        }
                     }
+                } catch (\Exception $e) {
+                    $isActive = false;
                 }
 
                 if ($isActive && $discountPercentage > 0) {
@@ -242,7 +250,7 @@ class StoreController
                 foreach ($resourcesToAdd as $type => $amount) {
                     if (!ResourcesHelper::addUserResource($userId, $type, $amount)) {
                         // Rollback: refund credits if resource addition fails
-                        CreditsHelper::addUserCredits($userId, $price);
+                        CreditsHelper::addUserCredits($userId, $finalPrice);
                         App::getInstance(true)->getLogger()->error("Failed to add resource $type to user $userId");
 
                         return ApiResponse::error('Failed to add resources', 'RESOURCE_ADDITION_FAILED', 500);
