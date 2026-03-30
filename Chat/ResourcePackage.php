@@ -31,6 +31,20 @@ class ResourcePackage
      */
     private static string $table = 'featherpanel_billingresourcesstore_resource_packages';
 
+    private static array $allowedCreateFields = [
+        'name', 'description', 'memory_limit', 'cpu_limit', 'disk_limit',
+        'server_limit', 'database_limit', 'backup_limit', 'allocation_limit',
+        'price', 'enabled', 'sort_order',
+        'discount_percentage', 'discount_start_date', 'discount_end_date', 'discount_enabled',
+    ];
+
+    private static array $allowedUpdateFields = [
+        'name', 'description', 'memory_limit', 'cpu_limit', 'disk_limit',
+        'server_limit', 'database_limit', 'backup_limit', 'allocation_limit',
+        'price', 'enabled', 'sort_order',
+        'discount_percentage', 'discount_start_date', 'discount_end_date', 'discount_enabled',
+    ];
+
     /**
      * Get all enabled packages ordered by sort_order.
      *
@@ -79,13 +93,6 @@ class ResourcePackage
         return $stmt->fetch(\PDO::FETCH_ASSOC) ?: null;
     }
 
-    private static array $allowedCreateFields = [
-        'name', 'description', 'memory_limit', 'cpu_limit', 'disk_limit',
-        'server_limit', 'database_limit', 'backup_limit', 'allocation_limit',
-        'price', 'enabled', 'sort_order',
-        'discount_percentage', 'discount_start_date', 'discount_end_date', 'discount_enabled',
-    ];
-
     /**
      * Create a new package.
      *
@@ -127,13 +134,6 @@ class ResourcePackage
 
         return false;
     }
-
-    private static array $allowedUpdateFields = [
-        'name', 'description', 'memory_limit', 'cpu_limit', 'disk_limit',
-        'server_limit', 'database_limit', 'backup_limit', 'allocation_limit',
-        'price', 'enabled', 'sort_order',
-        'discount_percentage', 'discount_start_date', 'discount_end_date', 'discount_enabled',
-    ];
 
     /**
      * Update package by ID.
@@ -184,8 +184,31 @@ class ResourcePackage
         }
 
         $pdo = Database::getPdoConnection();
-        $stmt = $pdo->prepare('DELETE FROM ' . self::$table . ' WHERE id = :id');
 
-        return $stmt->execute(['id' => $id]);
+        try {
+            $pdo->beginTransaction();
+
+            if (!Purchase::deleteByPackageId($id)) {
+                $pdo->rollBack();
+
+                return false;
+            }
+
+            $stmt = $pdo->prepare('DELETE FROM ' . self::$table . ' WHERE id = :id');
+            if (!$stmt->execute(['id' => $id]) || $stmt->rowCount() < 1) {
+                $pdo->rollBack();
+
+                return false;
+            }
+
+            $pdo->commit();
+
+            return true;
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
+        }
     }
 }

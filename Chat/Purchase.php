@@ -128,4 +128,23 @@ class Purchase
 
         return (int) $stmt->fetchColumn();
     }
+
+    /**
+     * Delete all purchase rows linked to a package (required before removing the package due to FK).
+     *
+     * @param int $packageId Package ID
+     *
+     * @return bool True if the statement executed successfully
+     */
+    public static function deleteByPackageId(int $packageId): bool
+    {
+        if ($packageId <= 0) {
+            return false;
+        }
+
+        $pdo = Database::getPdoConnection();
+        $stmt = $pdo->prepare('DELETE FROM ' . self::$table . ' WHERE package_id = :package_id');
+
+        return $stmt->execute(['package_id' => $packageId]);
+    }
 }
