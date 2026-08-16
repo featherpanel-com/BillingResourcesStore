@@ -15,7 +15,7 @@ import {
   Coins,
   Package,
   Zap,
-} from "lucide-vue-next";
+} from "@lucide/vue";
 import { useStoreAPI, type ResourcePackage } from "@/composables/useStoreAPI";
 import {
   useIndividualResourcesAPI,

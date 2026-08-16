@@ -5,14 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
   Loader2,
   Plus,
   Edit,
@@ -23,7 +15,8 @@ import {
   Server,
   Save,
   X,
-} from "lucide-vue-next";
+  ArrowLeft,
+} from "@lucide/vue";
 import { useToast } from "vue-toastification";
 import axios from "axios";
 
@@ -56,7 +49,7 @@ interface IndividualResource {
 
 const resources = ref<IndividualResource[]>([]);
 const loading = ref(false);
-const showDialog = ref(false);
+const showForm = ref(false);
 const editingResource = ref<IndividualResource | null>(null);
 const saving = ref(false);
 
@@ -135,7 +128,7 @@ const loadResources = async () => {
   }
 };
 
-const openCreateDialog = () => {
+const openCreateForm = () => {
   editingResource.value = null;
   const defaultUnits = getAvailableUnits("memory_limit");
   formData.value = {
@@ -153,10 +146,10 @@ const openCreateDialog = () => {
     enabled: true,
     sort_order: 0,
   };
-  showDialog.value = true;
+  showForm.value = true;
 };
 
-const openEditDialog = (resource: IndividualResource) => {
+const openEditForm = (resource: IndividualResource) => {
   editingResource.value = resource;
   formData.value = {
     ...resource,
@@ -169,11 +162,11 @@ const openEditDialog = (resource: IndividualResource) => {
     discount_start_date: resource.discount_start_date || undefined,
     discount_end_date: resource.discount_end_date || undefined,
   };
-  showDialog.value = true;
+  showForm.value = true;
 };
 
-const closeDialog = () => {
-  showDialog.value = false;
+const closeForm = () => {
+  showForm.value = false;
   editingResource.value = null;
 };
 
@@ -206,7 +199,7 @@ const saveResource = async () => {
       if (response.data.success) {
         toast.success("Resource updated successfully");
         await loadResources();
-        closeDialog();
+        closeForm();
       }
     } else {
       // Create
@@ -217,7 +210,7 @@ const saveResource = async () => {
       if (response.data.success) {
         toast.success("Resource created successfully");
         await loadResources();
-        closeDialog();
+        closeForm();
       }
     }
   } catch (err) {
@@ -267,154 +260,28 @@ onMounted(() => {
 <template>
   <div class="w-full h-full overflow-auto p-4">
     <div class="container mx-auto max-w-6xl">
-      <div class="mb-6 flex items-center justify-between">
-        <div>
-          <h1 class="text-2xl font-semibold">Individual Resources</h1>
-          <p class="text-sm text-muted-foreground">
-            Manage individual resource purchase options
-          </p>
-        </div>
-        <Button @click="openCreateDialog">
-          <Plus class="mr-2 h-4 w-4" />
-          Add Resource
-        </Button>
-      </div>
-
-      <div v-if="loading" class="flex items-center justify-center py-12">
-        <Loader2 class="h-8 w-8 animate-spin" />
-      </div>
-
-      <div v-else-if="resources.length === 0" class="mb-6">
-        <Card class="p-6 bg-card/50 backdrop-blur-sm">
-          <div class="text-center py-8">
-            <HardDrive class="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <h3 class="text-lg font-semibold mb-2">No Resources</h3>
-            <p class="text-sm text-muted-foreground mb-4">
-              Create your first individual resource purchase option.
-            </p>
-            <Button @click="openCreateDialog">
-              <Plus class="mr-2 h-4 w-4" />
-              Add Resource
-            </Button>
-          </div>
-        </Card>
-      </div>
-
-      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Card
-          v-for="resource in resources"
-          :key="resource.id"
-          class="p-6 flex flex-col bg-card/50 backdrop-blur-sm"
-        >
-          <div class="flex-1">
-            <div class="flex items-start justify-between mb-4">
-              <div class="flex items-center gap-2">
-                <component
-                  :is="getResourceTypeIcon(resource.resource_type)"
-                  class="h-5 w-5 text-primary"
-                />
-                <div>
-                  <h3 class="text-lg font-semibold">{{ resource.name }}</h3>
-                  <p class="text-xs text-muted-foreground">
-                    {{ getResourceTypeLabel(resource.resource_type) }}
-                  </p>
-                </div>
-              </div>
-              <div
-                class="px-2 py-1 rounded text-xs font-semibold"
-                :class="
-                  resource.enabled
-                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                    : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
-                "
-              >
-                {{ resource.enabled ? "Enabled" : "Disabled" }}
-              </div>
-            </div>
-
-            <p
-              v-if="resource.description"
-              class="text-sm text-muted-foreground mb-4"
-            >
-              {{ resource.description }}
-            </p>
-
-            <div class="space-y-2 text-sm">
-              <div class="flex justify-between">
-                <span class="text-muted-foreground">Price:</span>
-                <span class="font-medium">
-                  {{ formatCredits(resource.price_per_unit) }} credits per
-                  {{ resource.unit }}
-                </span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-muted-foreground">Min Purchase:</span>
-                <span class="font-medium">
-                  {{ resource.minimum_amount }} {{ resource.unit }}
-                </span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-muted-foreground">Max Purchase:</span>
-                <span class="font-medium">
-                  {{
-                    resource.maximum_amount
-                      ? `${resource.maximum_amount} ${resource.unit}`
-                      : "Unlimited"
-                  }}
-                </span>
-              </div>
-              <div
-                v-if="
-                  resource.discount_enabled && resource.discount_percentage > 0
-                "
-                class="flex justify-between"
-              >
-                <span class="text-muted-foreground">Discount:</span>
-                <span class="font-medium text-green-600">
-                  {{ resource.discount_percentage }}% OFF
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div class="flex gap-2 mt-4">
-            <Button
-              @click="openEditDialog(resource)"
-              variant="outline"
-              class="flex-1"
-            >
-              <Edit class="mr-2 h-4 w-4" />
-              Edit
-            </Button>
-            <Button
-              @click="deleteResource(resource.id!)"
-              variant="destructive"
-              class="flex-1"
-            >
-              <Trash2 class="mr-2 h-4 w-4" />
-              Delete
-            </Button>
-          </div>
-        </Card>
-      </div>
-
-      <!-- Create/Edit Dialog -->
-      <Dialog :open="showDialog" @update:open="showDialog = $event">
-        <DialogContent class="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
+      <!-- Create / Edit form page -->
+      <template v-if="showForm">
+        <div class="mb-6 flex items-center gap-3">
+          <Button variant="outline" size="icon" @click="closeForm" :disabled="saving">
+            <ArrowLeft class="h-4 w-4" />
+          </Button>
+          <div>
+            <h1 class="text-2xl font-semibold">
               {{ editingResource ? "Edit Resource" : "Create Resource" }}
-            </DialogTitle>
-            <DialogDescription>
+            </h1>
+            <p class="text-sm text-muted-foreground">
               {{
                 editingResource
                   ? "Update individual resource purchase options"
                   : "Create a new individual resource purchase option"
               }}
-            </DialogDescription>
-          </DialogHeader>
+            </p>
+          </div>
+        </div>
 
-          <div class="space-y-4 py-4">
+        <Card class="p-6 bg-card/50 backdrop-blur-sm">
+          <div class="space-y-4">
             <div>
               <Label for="name">Name *</Label>
               <Input
@@ -438,7 +305,7 @@ onMounted(() => {
               />
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label for="resource_type">Resource Type *</Label>
                 <select
@@ -495,7 +362,7 @@ onMounted(() => {
               </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label for="price_per_unit">Price per Unit (Credits) *</Label>
                 <Input
@@ -521,7 +388,7 @@ onMounted(() => {
               </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label for="minimum_amount">Minimum Amount *</Label>
                 <Input
@@ -619,7 +486,7 @@ onMounted(() => {
                   </p>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label for="discount_start_date">Start Date</Label>
                     <Input
@@ -649,21 +516,155 @@ onMounted(() => {
                 </div>
               </div>
             </div>
-          </div>
 
-          <DialogFooter>
-            <Button variant="outline" @click="closeDialog">
-              <X class="mr-2 h-4 w-4" />
-              Cancel
-            </Button>
-            <Button @click="saveResource" :disabled="saving">
-              <Loader2 v-if="saving" class="mr-2 h-4 w-4 animate-spin" />
-              <Save v-else class="mr-2 h-4 w-4" />
-              {{ saving ? "Saving..." : "Save" }}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <div class="flex justify-end gap-2 pt-4 border-t">
+              <Button variant="outline" @click="closeForm" :disabled="saving">
+                <X class="mr-2 h-4 w-4" />
+                Cancel
+              </Button>
+              <Button @click="saveResource" :disabled="saving">
+                <Loader2 v-if="saving" class="mr-2 h-4 w-4 animate-spin" />
+                <Save v-else class="mr-2 h-4 w-4" />
+                {{ saving ? "Saving..." : "Save" }}
+              </Button>
+            </div>
+          </div>
+        </Card>
+      </template>
+
+      <!-- List page -->
+      <template v-else>
+        <div class="mb-6 flex items-center justify-between">
+          <div>
+            <h1 class="text-2xl font-semibold">Individual Resources</h1>
+            <p class="text-sm text-muted-foreground">
+              Manage individual resource purchase options
+            </p>
+          </div>
+          <Button @click="openCreateForm">
+            <Plus class="mr-2 h-4 w-4" />
+            Add Resource
+          </Button>
+        </div>
+
+        <div v-if="loading" class="flex items-center justify-center py-12">
+          <Loader2 class="h-8 w-8 animate-spin" />
+        </div>
+
+        <div v-else-if="resources.length === 0" class="mb-6">
+          <Card class="p-6 bg-card/50 backdrop-blur-sm">
+            <div class="text-center py-8">
+              <HardDrive class="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+              <h3 class="text-lg font-semibold mb-2">No Resources</h3>
+              <p class="text-sm text-muted-foreground mb-4">
+                Create your first individual resource purchase option.
+              </p>
+              <Button @click="openCreateForm">
+                <Plus class="mr-2 h-4 w-4" />
+                Add Resource
+              </Button>
+            </div>
+          </Card>
+        </div>
+
+        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <Card
+            v-for="resource in resources"
+            :key="resource.id"
+            class="p-6 flex flex-col bg-card/50 backdrop-blur-sm"
+          >
+            <div class="flex-1">
+              <div class="flex items-start justify-between mb-4">
+                <div class="flex items-center gap-2">
+                  <component
+                    :is="getResourceTypeIcon(resource.resource_type)"
+                    class="h-5 w-5 text-primary"
+                  />
+                  <div>
+                    <h3 class="text-lg font-semibold">{{ resource.name }}</h3>
+                    <p class="text-xs text-muted-foreground">
+                      {{ getResourceTypeLabel(resource.resource_type) }}
+                    </p>
+                  </div>
+                </div>
+                <div
+                  class="px-2 py-1 rounded text-xs font-semibold"
+                  :class="
+                    resource.enabled
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                      : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
+                  "
+                >
+                  {{ resource.enabled ? "Enabled" : "Disabled" }}
+                </div>
+              </div>
+
+              <p
+                v-if="resource.description"
+                class="text-sm text-muted-foreground mb-4"
+              >
+                {{ resource.description }}
+              </p>
+
+              <div class="space-y-2 text-sm">
+                <div class="flex justify-between">
+                  <span class="text-muted-foreground">Price:</span>
+                  <span class="font-medium">
+                    {{ formatCredits(resource.price_per_unit) }} credits per
+                    {{ resource.unit }}
+                  </span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-muted-foreground">Min Purchase:</span>
+                  <span class="font-medium">
+                    {{ resource.minimum_amount }} {{ resource.unit }}
+                  </span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-muted-foreground">Max Purchase:</span>
+                  <span class="font-medium">
+                    {{
+                      resource.maximum_amount
+                        ? `${resource.maximum_amount} ${resource.unit}`
+                        : "Unlimited"
+                    }}
+                  </span>
+                </div>
+                <div
+                  v-if="
+                    resource.discount_enabled && resource.discount_percentage > 0
+                  "
+                  class="flex justify-between"
+                >
+                  <span class="text-muted-foreground">Discount:</span>
+                  <span class="font-medium text-green-600">
+                    {{ resource.discount_percentage }}% OFF
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex gap-2 mt-4">
+              <Button
+                @click="openEditForm(resource)"
+                variant="outline"
+                class="flex-1"
+              >
+                <Edit class="mr-2 h-4 w-4" />
+                Edit
+              </Button>
+              <Button
+                @click="deleteResource(resource.id!)"
+                variant="destructive"
+                class="flex-1"
+              >
+                <Trash2 class="mr-2 h-4 w-4" />
+                Delete
+              </Button>
+            </div>
+          </Card>
+        </div>
+      </template>
     </div>
   </div>
 </template>

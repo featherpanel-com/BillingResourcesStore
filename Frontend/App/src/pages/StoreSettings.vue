@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Save, Settings, Coins } from "lucide-vue-next";
+import { Loader2, Save, Settings, Coins } from "@lucide/vue";
 import { useToast } from "vue-toastification";
 import axios from "axios";
 

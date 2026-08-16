@@ -5,14 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
   Loader2,
   Plus,
   Edit,
@@ -23,7 +15,8 @@ import {
   Server,
   Save,
   X,
-} from "lucide-vue-next";
+  ArrowLeft,
+} from "@lucide/vue";
 import { useToast } from "vue-toastification";
 import axios from "axios";
 import type { ResourcePackage } from "@/composables/useStoreAPI";
@@ -40,7 +33,7 @@ function getApiErrorMessage(err: unknown): string {
 
 const loading = ref(false);
 const packages = ref<ResourcePackage[]>([]);
-const showDialog = ref(false);
+const showForm = ref(false);
 const editingPackage = ref<ResourcePackage | null>(null);
 const saving = ref(false);
 
@@ -95,7 +88,7 @@ const loadPackages = async () => {
   }
 };
 
-const openCreateDialog = () => {
+const openCreateForm = () => {
   editingPackage.value = null;
   formData.value = {
     name: "",
@@ -115,21 +108,21 @@ const openCreateDialog = () => {
     discount_end_date: undefined,
     discount_enabled: false,
   };
-  showDialog.value = true;
+  showForm.value = true;
 };
 
-const openEditDialog = (pkg: ResourcePackage) => {
+const openEditForm = (pkg: ResourcePackage) => {
   editingPackage.value = pkg;
   formData.value = {
     ...pkg,
     discount_start_date: pkg.discount_start_date || undefined,
     discount_end_date: pkg.discount_end_date || undefined,
   };
-  showDialog.value = true;
+  showForm.value = true;
 };
 
-const closeDialog = () => {
-  showDialog.value = false;
+const closeForm = () => {
+  showForm.value = false;
   editingPackage.value = null;
 };
 
@@ -183,7 +176,7 @@ const savePackage = async () => {
       }
     }
 
-    closeDialog();
+    closeForm();
     await loadPackages();
   } catch (err) {
     toast.error(getApiErrorMessage(err) || "Failed to save package");
@@ -218,155 +211,28 @@ onMounted(() => {
 <template>
   <div class="w-full h-full overflow-auto p-4">
     <div class="container mx-auto max-w-6xl">
-      <div class="mb-6 flex items-center justify-between">
-        <div>
-          <h1 class="text-2xl font-semibold">Resource Store Management</h1>
-          <p class="text-sm text-muted-foreground">
-            Manage resource packages available for purchase
-          </p>
-        </div>
-        <Button @click="openCreateDialog">
-          <Plus class="mr-2 h-4 w-4" />
-          Create Package
-        </Button>
-      </div>
-
-      <div v-if="loading" class="flex items-center justify-center py-12">
-        <Loader2 class="h-8 w-8 animate-spin" />
-      </div>
-
-      <div v-else-if="packages.length === 0" class="mb-6">
-        <Card class="p-6 bg-card/50 backdrop-blur-sm">
-          <div class="text-center py-8">
-            <h3 class="text-lg font-semibold mb-2">No Packages</h3>
-            <p class="text-sm text-muted-foreground mb-4">
-              Create your first resource package to get started.
-            </p>
-            <Button @click="openCreateDialog">
-              <Plus class="mr-2 h-4 w-4" />
-              Create Package
-            </Button>
-          </div>
-        </Card>
-      </div>
-
-      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Card v-for="pkg in packages" :key="pkg.id" class="p-6 bg-card/50 backdrop-blur-sm">
-          <div class="flex items-start justify-between mb-4">
-            <div class="flex-1">
-              <div class="flex items-center gap-2 mb-1">
-                <h3 class="text-xl font-semibold">{{ pkg.name }}</h3>
-                <span
-                  v-if="!pkg.enabled"
-                  class="text-xs px-2 py-1 bg-muted rounded"
-                >
-                  Disabled
-                </span>
-              </div>
-              <p
-                v-if="pkg.description"
-                class="text-sm text-muted-foreground mb-2"
-              >
-                {{ pkg.description }}
-              </p>
-              <div class="text-2xl font-bold text-primary">
-                {{ formatCredits(pkg.price) }}
-                <span class="text-sm font-normal text-muted-foreground"
-                  >Credits</span
-                >
-              </div>
-            </div>
-          </div>
-
-          <div class="space-y-1 mb-4 text-sm">
-            <div v-if="pkg.memory_limit > 0" class="flex items-center gap-2">
-              <HardDrive class="h-4 w-4 text-muted-foreground" />
-              <span class="text-muted-foreground">Memory:</span>
-              <span class="font-medium">{{
-                formatBytes(pkg.memory_limit)
-              }}</span>
-            </div>
-            <div v-if="pkg.cpu_limit > 0" class="flex items-center gap-2">
-              <Cpu class="h-4 w-4 text-muted-foreground" />
-              <span class="text-muted-foreground">CPU:</span>
-              <span class="font-medium">{{
-                formatPercentage(pkg.cpu_limit)
-              }}</span>
-            </div>
-            <div v-if="pkg.disk_limit > 0" class="flex items-center gap-2">
-              <Database class="h-4 w-4 text-muted-foreground" />
-              <span class="text-muted-foreground">Disk:</span>
-              <span class="font-medium">{{ formatBytes(pkg.disk_limit) }}</span>
-            </div>
-            <div v-if="pkg.server_limit > 0" class="flex items-center gap-2">
-              <Server class="h-4 w-4 text-muted-foreground" />
-              <span class="text-muted-foreground">Servers:</span>
-              <span class="font-medium">{{ pkg.server_limit }}</span>
-            </div>
-            <div v-if="pkg.database_limit > 0" class="flex items-center gap-2">
-              <Database class="h-4 w-4 text-muted-foreground" />
-              <span class="text-muted-foreground">Databases:</span>
-              <span class="font-medium">{{
-                pkg.database_limit === 0 ? "∞" : pkg.database_limit
-              }}</span>
-            </div>
-            <div v-if="pkg.backup_limit > 0" class="flex items-center gap-2">
-              <Database class="h-4 w-4 text-muted-foreground" />
-              <span class="text-muted-foreground">Backups:</span>
-              <span class="font-medium">{{
-                pkg.backup_limit === 0 ? "∞" : pkg.backup_limit
-              }}</span>
-            </div>
-            <div
-              v-if="pkg.allocation_limit > 0"
-              class="flex items-center gap-2"
-            >
-              <Server class="h-4 w-4 text-muted-foreground" />
-              <span class="text-muted-foreground">Allocations:</span>
-              <span class="font-medium">{{
-                pkg.allocation_limit === 0 ? "∞" : pkg.allocation_limit
-              }}</span>
-            </div>
-          </div>
-
-          <div class="flex gap-2">
-            <Button
-              @click="openEditDialog(pkg)"
-              variant="outline"
-              class="flex-1"
-            >
-              <Edit class="mr-2 h-4 w-4" />
-              Edit
-            </Button>
-            <Button
-              @click="deletePackage(pkg)"
-              variant="destructive"
-              class="flex-1"
-            >
-              <Trash2 class="mr-2 h-4 w-4" />
-              Delete
-            </Button>
-          </div>
-        </Card>
-      </div>
-
-      <!-- Create/Edit Dialog -->
-      <Dialog v-model:open="showDialog">
-        <DialogContent class="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
+      <!-- Create / Edit form page -->
+      <template v-if="showForm">
+        <div class="mb-6 flex items-center gap-3">
+          <Button variant="outline" size="icon" @click="closeForm" :disabled="saving">
+            <ArrowLeft class="h-4 w-4" />
+          </Button>
+          <div>
+            <h1 class="text-2xl font-semibold">
               {{ editingPackage ? "Edit Package" : "Create Package" }}
-            </DialogTitle>
-            <DialogDescription>
+            </h1>
+            <p class="text-sm text-muted-foreground">
               {{
                 editingPackage
                   ? "Update package details"
                   : "Create a new resource package"
               }}
-            </DialogDescription>
-          </DialogHeader>
+            </p>
+          </div>
+        </div>
 
-          <div class="space-y-4 py-4">
+        <Card class="p-6 bg-card/50 backdrop-blur-sm">
+          <div class="space-y-4">
             <div>
               <Label for="name">Package Name *</Label>
               <Input
@@ -399,7 +265,7 @@ onMounted(() => {
               />
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label for="memory_limit">Memory (MB)</Label>
                 <Input
@@ -553,7 +419,7 @@ onMounted(() => {
                   </p>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label for="discount_start_date">Start Date</Label>
                     <Input
@@ -583,21 +449,156 @@ onMounted(() => {
                 </div>
               </div>
             </div>
-          </div>
 
-          <DialogFooter>
-            <Button variant="outline" @click="closeDialog" :disabled="saving">
-              <X class="mr-2 h-4 w-4" />
-              Cancel
-            </Button>
-            <Button @click="savePackage" :disabled="saving">
-              <Loader2 v-if="saving" class="mr-2 h-4 w-4 animate-spin" />
-              <Save v-else class="mr-2 h-4 w-4" />
-              {{ saving ? "Saving..." : "Save" }}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <div class="flex justify-end gap-2 pt-4 border-t">
+              <Button variant="outline" @click="closeForm" :disabled="saving">
+                <X class="mr-2 h-4 w-4" />
+                Cancel
+              </Button>
+              <Button @click="savePackage" :disabled="saving">
+                <Loader2 v-if="saving" class="mr-2 h-4 w-4 animate-spin" />
+                <Save v-else class="mr-2 h-4 w-4" />
+                {{ saving ? "Saving..." : "Save" }}
+              </Button>
+            </div>
+          </div>
+        </Card>
+      </template>
+
+      <!-- List page -->
+      <template v-else>
+        <div class="mb-6 flex items-center justify-between">
+          <div>
+            <h1 class="text-2xl font-semibold">Resource Store Management</h1>
+            <p class="text-sm text-muted-foreground">
+              Manage resource packages available for purchase
+            </p>
+          </div>
+          <Button @click="openCreateForm">
+            <Plus class="mr-2 h-4 w-4" />
+            Create Package
+          </Button>
+        </div>
+
+        <div v-if="loading" class="flex items-center justify-center py-12">
+          <Loader2 class="h-8 w-8 animate-spin" />
+        </div>
+
+        <div v-else-if="packages.length === 0" class="mb-6">
+          <Card class="p-6 bg-card/50 backdrop-blur-sm">
+            <div class="text-center py-8">
+              <h3 class="text-lg font-semibold mb-2">No Packages</h3>
+              <p class="text-sm text-muted-foreground mb-4">
+                Create your first resource package to get started.
+              </p>
+              <Button @click="openCreateForm">
+                <Plus class="mr-2 h-4 w-4" />
+                Create Package
+              </Button>
+            </div>
+          </Card>
+        </div>
+
+        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <Card v-for="pkg in packages" :key="pkg.id" class="p-6 bg-card/50 backdrop-blur-sm">
+            <div class="flex items-start justify-between mb-4">
+              <div class="flex-1">
+                <div class="flex items-center gap-2 mb-1">
+                  <h3 class="text-xl font-semibold">{{ pkg.name }}</h3>
+                  <span
+                    v-if="!pkg.enabled"
+                    class="text-xs px-2 py-1 bg-muted rounded"
+                  >
+                    Disabled
+                  </span>
+                </div>
+                <p
+                  v-if="pkg.description"
+                  class="text-sm text-muted-foreground mb-2"
+                >
+                  {{ pkg.description }}
+                </p>
+                <div class="text-2xl font-bold text-primary">
+                  {{ formatCredits(pkg.price) }}
+                  <span class="text-sm font-normal text-muted-foreground"
+                    >Credits</span
+                  >
+                </div>
+              </div>
+            </div>
+
+            <div class="space-y-1 mb-4 text-sm">
+              <div v-if="pkg.memory_limit > 0" class="flex items-center gap-2">
+                <HardDrive class="h-4 w-4 text-muted-foreground" />
+                <span class="text-muted-foreground">Memory:</span>
+                <span class="font-medium">{{
+                  formatBytes(pkg.memory_limit)
+                }}</span>
+              </div>
+              <div v-if="pkg.cpu_limit > 0" class="flex items-center gap-2">
+                <Cpu class="h-4 w-4 text-muted-foreground" />
+                <span class="text-muted-foreground">CPU:</span>
+                <span class="font-medium">{{
+                  formatPercentage(pkg.cpu_limit)
+                }}</span>
+              </div>
+              <div v-if="pkg.disk_limit > 0" class="flex items-center gap-2">
+                <Database class="h-4 w-4 text-muted-foreground" />
+                <span class="text-muted-foreground">Disk:</span>
+                <span class="font-medium">{{ formatBytes(pkg.disk_limit) }}</span>
+              </div>
+              <div v-if="pkg.server_limit > 0" class="flex items-center gap-2">
+                <Server class="h-4 w-4 text-muted-foreground" />
+                <span class="text-muted-foreground">Servers:</span>
+                <span class="font-medium">{{ pkg.server_limit }}</span>
+              </div>
+              <div v-if="pkg.database_limit > 0" class="flex items-center gap-2">
+                <Database class="h-4 w-4 text-muted-foreground" />
+                <span class="text-muted-foreground">Databases:</span>
+                <span class="font-medium">{{
+                  pkg.database_limit === 0 ? "∞" : pkg.database_limit
+                }}</span>
+              </div>
+              <div v-if="pkg.backup_limit > 0" class="flex items-center gap-2">
+                <Database class="h-4 w-4 text-muted-foreground" />
+                <span class="text-muted-foreground">Backups:</span>
+                <span class="font-medium">{{
+                  pkg.backup_limit === 0 ? "∞" : pkg.backup_limit
+                }}</span>
+              </div>
+              <div
+                v-if="pkg.allocation_limit > 0"
+                class="flex items-center gap-2"
+              >
+                <Server class="h-4 w-4 text-muted-foreground" />
+                <span class="text-muted-foreground">Allocations:</span>
+                <span class="font-medium">{{
+                  pkg.allocation_limit === 0 ? "∞" : pkg.allocation_limit
+                }}</span>
+              </div>
+            </div>
+
+            <div class="flex gap-2">
+              <Button
+                @click="openEditForm(pkg)"
+                variant="outline"
+                class="flex-1"
+              >
+                <Edit class="mr-2 h-4 w-4" />
+                Edit
+              </Button>
+              <Button
+                @click="deletePackage(pkg)"
+                variant="destructive"
+                class="flex-1"
+              >
+                <Trash2 class="mr-2 h-4 w-4" />
+                Delete
+              </Button>
+            </div>
+          </Card>
+        </div>
+      </template>
     </div>
   </div>
 </template>
